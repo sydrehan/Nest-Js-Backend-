@@ -1,36 +1,27 @@
-// src/auth/auth.service.ts
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import * as bcrypt from 'bcryptjs';
-import { User, UserDocument } from '../users/user.schema';  // Import User schema
+import { JwtService } from '@nestjs/jwt';
+import { UserService } from '../user/user.service';
+import { JwtPayload } from './jwt-payload.interface';
+import { User } from '../user/schemas/user.schema';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectModel(User.name) private userModel: Model<UserDocument>,  // Inject the User model
+    private readonly userService: UserService,
+    private readonly jwtService: JwtService,
   ) {}
 
-  // Implement the signup method
-  async signup(createUserDto: any): Promise<any> {
-    const { email, password } = createUserDto;
-
-    // Check if the user already exists
-    const existingUser = await this.userModel.findOne({ email });
-    if (existingUser) {
-      throw new Error('User already exists');
+  async login(username: string, password: string): Promise<string | null> {
+    const user = await this.userService.validateUser(username, password);
+    if (!user) {
+      return null;
     }
 
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create and save the new user
-    const newUser = new this.userModel({
-      email,
-      password: hashedPassword,
-    });
-    return newUser.save();
+    const payload: JwtPayload = { username: user.username, sub: user.id };
+    return this.jwtService.sign(payload); // Generate JWT token
   }
 
-  // Other methods (e.g., login)...
+  async validateUser(payload: JwtPayload): Promise<User | null> {
+    return this.userService.findOne(payload.username); // Ensure this method exists in UserService
+  }
 }

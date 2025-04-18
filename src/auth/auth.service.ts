@@ -2,18 +2,19 @@ import { Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { UserService } from '../users/users.service';
+import { JwtService } from '@nestjs/jwt';
+
 @Injectable()
 export class AuthService {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly jwtService: JwtService,
+  ) {}
 
-  // ✅ Signup
   async signup(createUserDto: CreateUserDto): Promise<any> {
     const { email, password } = createUserDto;
-
     const user = await this.userService.findByEmail(email);
-    if (user) {
-      throw new Error('User already exists');
-    }
+    if (user) throw new Error('User already exists');
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await this.userService.create({
@@ -24,18 +25,16 @@ export class AuthService {
     return { message: 'Signup successful', userId: newUser._id };
   }
 
-  // ✅ Login
   async login(email: string, password: string): Promise<any> {
     const user = await this.userService.findByEmail(email);
-    if (!user) {
-      throw new Error('Invalid credentials');
-    }
+    if (!user) throw new Error('Invalid credentials');
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      throw new Error('Invalid credentials');
-    }
+    if (!isMatch) throw new Error('Invalid credentials');
 
-    return { message: 'Login successful', userId: user._id };
+    const payload = { email: user.email, sub: user._id };
+    const token = this.jwtService.sign(payload);
+
+    return { message: 'Login successful', token };
   }
 }

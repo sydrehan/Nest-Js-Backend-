@@ -1,12 +1,14 @@
+// app.module.ts
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { UserService } from './user.service';
-import { UserController } from './user.controller';
-import { UserSchema } from './schemas/user.schema';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: 'User', schema: UserSchema }])],
-  providers: [UserService],
-  controllers: [UserController],
+  imports: [
+    MongooseModule.forRoot('mongodb://127.0.0.1:27017/auth'), // Your local MongoDB
+    AuthModule,
+    UsersModule,
+  ],
 })
-export class UserModule {}
+export class AppModule {}

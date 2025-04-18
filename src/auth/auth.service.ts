@@ -1,27 +1,41 @@
 import { Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { UserService } from '../user/user.service';
-import { JwtPayload } from './jwt-payload.interface';
-import { User } from '../user/schemas/user.schema';
-
+import * as bcrypt from 'bcrypt';
+import { CreateUserDto } from '../users/dto/create-user.dto';
+import { UserService } from '../users/users.service';
 @Injectable()
 export class AuthService {
-  constructor(
-    private readonly userService: UserService,
-    private readonly jwtService: JwtService,
-  ) {}
+  constructor(private readonly userService: UserService) {}
 
-  async login(username: string, password: string): Promise<string | null> {
-    const user = await this.userService.validateUser(username, password);
-    if (!user) {
-      return null;
+  // ✅ Signup
+  async signup(createUserDto: CreateUserDto): Promise<any> {
+    const { email, password } = createUserDto;
+
+    const user = await this.userService.findByEmail(email);
+    if (user) {
+      throw new Error('User already exists');
     }
 
-    const payload: JwtPayload = { username: user.username, sub: user.id };
-    return this.jwtService.sign(payload); // Generate JWT token
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = await this.userService.create({
+      ...createUserDto,
+      password: hashedPassword,
+    });
+
+    return { message: 'Signup successful', userId: newUser._id };
   }
 
-  async validateUser(payload: JwtPayload): Promise<User | null> {
-    return this.userService.findOne(payload.username); // Ensure this method exists in UserService
+  // ✅ Login
+  async login(email: string, password: string): Promise<any> {
+    const user = await this.userService.findByEmail(email);
+    if (!user) {
+      throw new Error('Invalid credentials');
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      throw new Error('Invalid credentials');
+    }
+
+    return { message: 'Login successful', userId: user._id };
   }
 }

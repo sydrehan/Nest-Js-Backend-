@@ -1,20 +1,21 @@
 import { Module } from '@nestjs/common';
-import { UserService } from '../users/users.service';
+import { UsersService } from '../users/users.service';  // Corrected to UsersService
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { User, UserSchema } from '../users/schemas/user.schema';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './jwt.strategy';
+import { TypeOrmModule } from '@nestjs/typeorm';  // Import TypeOrmModule
+import { User } from '../users/entities/user.entity';  // Import User entity for TypeORM
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    TypeOrmModule.forFeature([User]),  // Use TypeORM to feature User
     JwtModule.register({
       secret: 'secretKey123',
       signOptions: { expiresIn: '1h' },
     }),
   ],
-  providers: [AuthService, UserService, JwtStrategy],
+  providers: [AuthService, UsersService, JwtStrategy],  // Corrected to UsersService
   controllers: [AuthController],
 })
 export class AuthModule {}

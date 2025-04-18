@@ -1,11 +1,12 @@
+// src/users/users.module.ts
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { UserService } from './users.service';
-import { User, UserSchema } from './schemas/user.schema';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { UsersService } from './users.service';
+import { User } from './entities/user.entity'; // 👈 We’ll define this new entity
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: User.name, schema: UserSchema }])],
-  providers: [UserService],
-  exports: [UserService], // ✅ So AuthService can use it
+  imports: [TypeOrmModule.forFeature([User])],
+  providers: [UsersService],
+  exports: [UsersService],
 })
 export class UsersModule {}
